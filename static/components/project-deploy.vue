@@ -33,7 +33,7 @@
 let projectList = store.projectList;
 
 Vue.onMounted(() => {
-  Vue.watch(store.currentProjectId , () => {
+  Vue.watch(() => store.currentProjectId , () => {
     ajax({
       url: '/api/project/getDeployShellsById',
       data: {

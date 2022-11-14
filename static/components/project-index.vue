@@ -11,7 +11,7 @@
 
     <div class="absolute right-2 flex" style="top: 4px;" >
       <el-button @click="toDeploy" type="primary" class="w-5"  size="mini">发布</el-button>
-      <el-select v-model="currentProjectId" class="ml-1" placeholder="请选择项目">
+      <el-select v-model="store.currentProjectId" class="ml-1" placeholder="请选择项目">
         <el-option
             v-for="item in projectList"
             :key="item.id"
@@ -124,7 +124,8 @@ return {
 
         })
   },
-  deployDialog
+  deployDialog,
+  store
 }
 </script>
 

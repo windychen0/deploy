@@ -12,6 +12,10 @@ const vueStore = Vue.reactive({
         {
             "id": "eb9cc701-4152-476f-8198-b76e7c5b6b29",
             "name": "南芯PPM-WEB",
+        },
+        {
+            "id": "eb9cc701-4152-476f-8198-b76e7c5b6b28",
+            "name": "南芯PPM-JAVA",
         }
     ],
     currentProjectId: 'eb9cc701-4152-476f-8198-b76e7c5b6b29'
@@ -28,7 +32,7 @@ let routeMap = {
                 let loginHandle = () => {
                     if(!username.value || !pwd.value) return;
                     ajax({
-                        url: '/api/user/getToken',
+                        url: '/api/user/login',
                         data: {
                             name: username.value,
                             pwd: md5(pwd.value)
