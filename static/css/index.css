@@ -1,0 +1,29 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+html , body , #app{
+    min-height: 100vh;
+    height: 100%;
+}
+
+body{
+    font-size: 16px;
+}
+
+.el-tabs__content{
+    padding: 0 !important;
+    flex: 1;
+}
+
+.el-tabs__content>div{
+    height: 100%;
+    max-height: calc( 100vh - 92px );
+    overflow-y: auto;
+}
+
+.right-list-active{
+    background-color: rgb(220 , 234 , 255);
+    color: rgb(64 , 158 , 255);
+}
