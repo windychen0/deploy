@@ -14,4 +14,7 @@ const observeMap = {
             vm.component(name , Vue.defineAsyncComponent(resolve => getComponent(name).then(resolve)))
         })
     },
+    message(msg){
+        ElementPlus.ElMessage(msg)
+    }
 }

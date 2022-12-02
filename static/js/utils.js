@@ -6,7 +6,6 @@ function ajax(config = {
     prefix: 'api',
     moduleName: '',
     fn: '',
-
     method: 'get',
     data: {},
     ignore: false
@@ -50,18 +49,26 @@ function ajax(config = {
         }),
         method: config.method,
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': (vueStore.userInfo && vueStore.userInfo.token) || ''
         }
     })
         .then(r => r.json())
         .then(res => {
-            if (res.code === 200) {
-                resolveAjaxData(res, emitKey)
+            resolveAjaxData(res, emitKey)
+            if (res.code !== 200) {
+                if(res.code){
+                    config.ignore = true
+                }
+                let e = new Error('请求异常')
+                e.data = res.data
+                throw e
             }
             return res.data
         })
         .catch(e => {
             !config.ignore && ElementPlus.ElMessage.error(e.message || JSON.stringify(e, null, 4))
+            throw e
         })
 }
 
@@ -69,13 +76,7 @@ function resolveAjaxData(res, emitKey) {
     console.log('------------------resolveAjaxData---------------------------')
     console.log({res, emitKey})
     let r = res.data
-    if (r.emitKey instanceof Array) {
-        return r.emitKey.forEach(key => {
-            subscribePublish.$emit(key, r.data[key])
-        })
-    }
-
-    return subscribePublish.$emit(r.emitKey || emitKey, r.data)
+    return r.emitKey instanceof Array ? r.emitKey.map(key => subscribePublish.$emit(key, r.data[key])) : subscribePublish.$emit(r.emitKey || emitKey, r.data)
 }
 
 function getComponent(componentName) {

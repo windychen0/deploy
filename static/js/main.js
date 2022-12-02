@@ -4,21 +4,9 @@ changeRem()
 const _socket = null;
 
 const vueStore = Vue.reactive({
-    userInfo: {
-        name: 'chenleqiang',
-        token: '9527888'
-    },
-    projectList: [
-        {
-            "id": "eb9cc701-4152-476f-8198-b76e7c5b6b29",
-            "name": "南芯PPM-WEB",
-        },
-        {
-            "id": "eb9cc701-4152-476f-8198-b76e7c5b6b28",
-            "name": "南芯PPM-JAVA",
-        }
-    ],
-    currentProjectId: 'eb9cc701-4152-476f-8198-b76e7c5b6b29'
+    userInfo: {},
+    projectList: [],
+    currentProjectId: ''
 })
 
 let routeMap = {
@@ -27,8 +15,8 @@ let routeMap = {
         component:{
             name: 'login',
             setup(){
-                let username = Vue.ref('chenleqiang')
-                let pwd = Vue.ref('123456')
+                let username = Vue.ref('')
+                let pwd = Vue.ref('')
                 let loginHandle = () => {
                     if(!username.value || !pwd.value) return;
                     ajax({

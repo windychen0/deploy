@@ -1,9 +1,10 @@
 const store = require('../utils/store')
-const Restful = require('../utils/restful')
 const userStore = store.get('user')
 const projectStore = store.get('project')
 const md5 = require('../utils/md5')
 const constMap = require('../utils/const')
+const uuid = require("../utils/uuid");
+const authStore = store.get('auth');
 
 async function getUserProjectList(arr = [], keyArr = []) {
     let list = await projectStore.get('list', []);
@@ -17,62 +18,73 @@ async function getUserProjectList(arr = [], keyArr = []) {
     }).filter(Boolean)
 }
 
-const checkAuth = {
-    async fn({token}) {
-
+const getToken = {
+    async fn(user) {
+        return uuid(user.name)
     }
 }
 
 module.exports = {
     login: {
         method: 'post',
+        ignoreAuth: true,
         checks: {
             AllNotNull: {
                 arg: ['name' , 'pwd'],
                 req: ['body']
-            }
+            },
         },
         async fn({res, req}) {
 
             let {name, pwd} = req.body
 
             if (!name || !pwd) {
-                return res.json(new Restful({
+                return res.restful = {
                     code: 401, data: {
                         emitKey: [constMap.EMIT_KEY.MESSAGE],
                         data: {
                             [constMap.EMIT_KEY.MESSAGE]: '请输入用户名和密码'
                         }
                     }
-                }))
+                }
             }
 
             let list = await userStore.get('list', [])
             let user = list.find(item => item.name === name.trim())
 
             if (!user || (md5(user.pwd) !== pwd)) {
-                return res.json(new Restful({
+                return res.restful = {
                     code: 401, data: {
                         emitKey: ['message'],
                         data: {
-                            message: '用户名与密码不一致，请重新输入'
+                            message: {
+                                type: 'error',
+                                message: '用户名与密码不匹配'
+                            }
                         }
                     }
-                }))
+                }
             }
             const projectList = await getUserProjectList(user.project || [], ['id', 'name'])
-            return res.json(new Restful({
+            let userMap = await authStore.get('userMap' , {})
+            let token = await getToken.fn(user)
+
+            let _user = {
+                ...user,
+                pwd: undefined,
+                token
+            }
+
+            userMap[token] = _user
+            authStore.set('userMap' , userMap)
+            res.restful = {
                 data: {
                     emitKey: ['setVueStore', 'addComponentFromPermission'],
                     data: {
                         setVueStore: [
                             {
                                 key: 'userInfo',
-                                value: {
-                                    ...user,
-                                    pwd: undefined,
-                                    token: '9527888'
-                                }
+                                value: _user
                             },
                             {
                                 key: 'projectList',
@@ -92,7 +104,7 @@ module.exports = {
                         ]
                     }
                 }
-            }))
+            }
         }
     },
 }

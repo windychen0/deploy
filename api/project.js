@@ -1,6 +1,6 @@
 const store = require('../utils/store')
-const Restful = require('../utils/restful')
 const uuid = require('../utils/uuid')
+const { formatDate } = require('../utils/utils')
 
 const getProjectById = {
     async fn({id}){
@@ -13,6 +13,10 @@ const addProjectVersion = {
     async fn({version , state , projectId}){
         let _store = store.get('project-'+ projectId)
         let list = JSON.parse(JSON.stringify(await _store.get('versionList' , [])))
+        let current_version = list[0]
+        if(current_version){
+            current_version.duration = formatDate()
+        }
         list.unshift(version)
         _store.set('versionList' , list)
 
@@ -55,20 +59,20 @@ module.exports = {
         async fn({res, req}) {
             const {id} = req.query
             if (!id) {
-                return res.json(new Restful({
+                return res.restful = {
                     code: 400,
                     msg: '异常请求,没有id'
-                }))
+                }
             }
             let list = await store.get(`project-${id}`).get('versionList', [])
-            return res.json(new Restful({
+            return res.restful = {
                 data: {
                     emitKey: ['setProjectVersionList'],
                     data: {
                         setProjectVersionList: list
                     }
                 }
-            }))
+            }
         }
     },
     getDeployShellsById: {
@@ -76,20 +80,20 @@ module.exports = {
         async fn({res , req}){
             const {id} = req.query
             if (!id) {
-                return res.json(new Restful({
+                return res.restful = {
                     code: 400,
                     msg: '异常请求,没有id'
-                }))
+                }
             }
             let list = await store.get(`project-deploy-${id}`).get('list', [])
-            return res.json(new Restful({
+            res.restful = {
                 data: {
                     emitKey: ['setDeployShellList'],
                     data: {
                         setDeployShellList: list
                     }
                 }
-            }))
+            }
         }
     },
 }

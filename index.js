@@ -5,6 +5,8 @@ const io = new (require("socket.io").Server)(server);
 const log = require("./utils/log");
 const api = require("./api/index");
 const uuid = require("./utils/uuid");
+const Restful = require('./utils/restful');
+const checkAuth = require('./utils/checkAuth');
 const bodyParser = require("body-parser");
 
 let renderMapProxy = require("./utils/renderMap.js");
@@ -27,6 +29,7 @@ app.use(bodyParser.json())
 // app.use(bodyParser.urlencoded())
 
 app.use((req, res, next) => {
+  res.restful = {};
   let url = req.url;
   log('request: ' +  url)
   if (url.match(regx.render.match)) {
@@ -43,7 +46,18 @@ app.use((req, res, next) => {
     const fn = pathArr[1];
     const target = api[moduleName] ? api[moduleName][fn] : null;
     if(target && target.method === req.method.toLowerCase()){
-      return target.fn({res , req , next})
+      let p = new Promise(r => r())
+      if(!target.ignoreAuth){
+        p = checkAuth.fn(req.headers.authorization)
+      }
+      return p.then(rtData => {
+        if(rtData && rtData.code === 401){
+          return res.restful = rtData
+        }
+        res._user = rtData
+        return target.fn({res , req , next})
+      })
+          .then(() => res.json(new Restful(res.restful)))
     }
   }
   next();
