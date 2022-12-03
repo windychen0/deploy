@@ -1,10 +1,11 @@
 const store = require('../utils/store')
+const projectStore = store.get('project')
 const uuid = require('../utils/uuid')
 const { formatDate } = require('../utils/utils')
 
 const getProjectById = {
     async fn({id}){
-        let list = await store.get('project').get('list')
+        let list = await projectStore.get('list')
         return Array.isArray(id) ? list.filter(item => id.includes(item.id)) : (list.find(item => item.id === id) || null)
     }
 }
