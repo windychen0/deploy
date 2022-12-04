@@ -6,7 +6,8 @@ const _socket = null;
 const vueStore = Vue.reactive({
     userInfo: {},
     projectList: [],
-    currentProjectId: ''
+    currentProjectId: '',
+    currentDeployId: ''
 })
 
 let routeMap = {

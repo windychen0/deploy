@@ -10,7 +10,7 @@
     </el-tabs>
 
     <div class="absolute right-2 flex" style="top: 4px;" >
-      <el-button @click="toDeploy" type="primary" class="w-5"  size="mini">发布</el-button>
+      <el-button v-show="activeName === 'deploy'" @click="toDeploy" type="primary" class="w-5"  size="mini">发布</el-button>
       <el-select v-model="store.currentProjectId" class="ml-1" placeholder="请选择项目">
         <el-option
             v-for="item in projectList"
@@ -94,9 +94,8 @@ return {
       url: '/api/deploy/runDeploy',
       method: "post",
       data: {
-        id: '7e120896-cb37-476c-8caf-35640657ff15',
-        projectId: 'eb9cc701-4152-476f-8198-b76e7c5b6b29',
-        username: store.userInfo.name,
+        id: store.currentDeployId,
+        projectId: store.currentProjectId,
         msg: deployDialog.msg
       }
     })

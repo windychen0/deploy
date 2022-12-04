@@ -19,7 +19,7 @@
           <div>最后编辑者：{{item.lastEditor}}</div>
         </template>
 
-      <li @click="data.active = item.id" :class="['px-1.5 py-1 mt-1 hover:text-blue-500 text-gray-500 duration-300 rounded-sm cursor-pointer' , data.active === item.id && 'right-list-active']" >
+      <li @click="toActive(item.id)" :class="['px-1.5 py-1 mt-1 hover:text-blue-500 text-gray-500 duration-300 rounded-sm cursor-pointer' , data.active === item.id && 'right-list-active']" >
         <div class="w-full overflow-ellipsis overflow-hidden whitespace-nowrap">{{item.name}}</div>
         <div class="w-full overflow-ellipsis overflow-hidden whitespace-nowrap" >{{item.lastEditor}}</div>
       </li>
@@ -51,6 +51,7 @@ let data = Vue.reactive({
 subscribePublish.$on('setDeployShellList' , _data => {
   data.list = _data
   data.active = _data[0]?.id || null
+  store.currentDeployId = _data[0]?.id || ''
 })
 
 return {
@@ -59,6 +60,10 @@ return {
   currentData: Vue.computed(() => data.active ? data.list.find(i => i.id === data.active) : {}),
   formatShell(code){
     return code
+  },
+  toActive(id){
+    store.currentDeployId = id
+    data.active = id
   }
 }
 </script>
