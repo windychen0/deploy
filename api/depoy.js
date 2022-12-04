@@ -8,9 +8,11 @@ const {runPromiseInSequence, formatDate} = require('../utils/utils')
 
 const renderShell = {
     async fn({stage, context}) {
+        let shell = new Function('with(this){return `' + (stage.shell || '') + '`}').bind(context)();
+        log('渲染shell: ' + shell);
         return {
             ...stage,
-            shell: new Function('with(this){return `' + (stage.shell || '').replace(/`/, '\`') + '`}').bind(context)()
+            shell
         }
     }
 }
@@ -41,7 +43,6 @@ const runStages = {
 
 const runStage = {
     async fn({stage, index, version, length , context}) {
-        log('运行shell: ' + stage.shell)
         let version_stage = {
             name: stage.name,
             state: 'pending',

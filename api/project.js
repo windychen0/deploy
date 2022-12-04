@@ -22,6 +22,7 @@ const addProjectVersion = {
         _store.set('versionList' , list)
 
         let projectList = await store.get('project').get('list')
+        store.get('project').cacheData()
         let _p = projectList.find(item => item.id === projectId)
         _p && (_p.current_version = version.version)
         version.state = state || 'ok'
