@@ -3,11 +3,25 @@ changeRem()
 
 const _socket = null;
 
-const vueStore = Vue.reactive({
-    userInfo: {},
-    projectList: [],
-    currentProjectId: '',
-    currentDeployId: ''
+let vueStore;
+
+try{
+    let info = JSON.parse(localStorage.getItem('vueStore'))
+    if(!info){
+        throw new Error()
+    }
+    vueStore = Vue.reactive(info)
+}catch (e) {
+    Vue.reactive({
+        userInfo: {},
+        projectList: [],
+        currentProjectId: '',
+        currentDeployId: ''
+    })
+}
+
+Vue.watch(vueStore , () => {
+    localStorage.setItem('vueStore' , JSON.stringify(vueStore))
 })
 
 let routeMap = {
