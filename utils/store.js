@@ -26,7 +26,7 @@ class StoreModule {
         this._data = {}
         this._task = null
         this._cacheSplitTime = 10 * 1000
-        this._path = path.resolve(__dirname , `./cache/${name}.json`)
+        this._path = path.resolve(__dirname , `../cache/${name}.json`)
     }
 
     async get(key , initVar = {}){

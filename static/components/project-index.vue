@@ -9,8 +9,9 @@
       </el-tab-pane>
     </el-tabs>
 
-    <div class="absolute right-2 flex" style="top: 4px;" >
-      <el-button v-show="activeName === 'deploy'" @click="toDeploy" type="primary" class="w-5"  size="mini">发布</el-button>
+    <div class="absolute right-2 flex" style="top: 4px;">
+      <el-button v-show="activeName === 'deploy'" @click="toDeploy" type="primary" class="w-5" size="mini">发布
+      </el-button>
       <el-select v-model="store.currentProjectId" class="ml-1" placeholder="请选择项目">
         <el-option
             v-for="item in projectList"
@@ -22,19 +23,21 @@
     </div>
 
     <el-dialog v-model="deployDialog.show" title="版本发布">
-        <div class="w-full">
+      <div class="w-full">
 
-          <span>钉钉消息</span><el-input class="w-full" v-model="deployDialog.msg"></el-input>
+        <span>钉钉消息</span>
+        <el-input class="w-full" v-model="deployDialog.msg"></el-input>
 
-          <ul class="mt-1 w-full px-1.5 py-1 bg-gray-800 text-gray-400" v-if="deployDialog.msgArr.length" style="max-height: 400px;overflow-y: auto">
-            <div class="w-full mt-1" v-for="m in deployDialog.msgArr" :key="m.id">{{m.msg}}</div>
-          </ul>
+        <ul class="mt-1 w-full px-1.5 py-1 bg-gray-800 text-gray-400" v-if="deployDialog.msgArr.length"
+            style="max-height: 400px;overflow-y: auto">
+          <div class="w-full mt-1" v-for="m in deployDialog.msgArr" :key="m.id">{{ m.msg }}</div>
+        </ul>
 
-          <div class="w-full flex mt-1">
-            <el-button @click="deployDialog.show = false">关闭</el-button>
-            <el-button @click="toSend" type="primary" :disable="deployDialog.disabled" >发送</el-button>
-          </div>
+        <div class="w-full flex mt-1">
+          <el-button @click="deployDialog.show = false">关闭</el-button>
+          <el-button @click="toSend" type="primary" :disabled="deployDialog.disabled">发送</el-button>
         </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -74,55 +77,66 @@ let deployDialog = Vue.reactive({
 
 let timer = null
 
-Vue.watch(() => deployDialog.show , () => {
-  if(!deployDialog.show){
-    deployDialog.msgArr = []
-    deployDialog.msg = ''
+Vue.onUnmounted(() => {
+  clearInterval(timer)
+})
+
+Vue.watch(() => deployDialog.show, () => {
+  if (!deployDialog.show) {
+    Vue.nextTick(() => {
+      clearInterval(timer)
+      deployDialog.msgArr = []
+      deployDialog.msg = ''
+    })
+  } else {
+
   }
 })
+
+let toSend = () => {
+  ajax({
+    url: '/api/deploy/runDeploy',
+    method: "post",
+    data: {
+      id: store.currentDeployId,
+      projectId: store.currentProjectId,
+      msg: deployDialog.msg
+    }
+  })
+      .then(({id}) => {
+        timer = setInterval(() => {
+          ajax({
+            url: '/api/deploy/getDeployProgress',
+            method: 'get',
+            data: {
+              id,
+              messageId: deployDialog.msgArr.length ? deployDialog.msgArr[deployDialog.msgArr.length - 1].id : undefined
+            }
+          }).then(d => {
+            let t = d.data['sendDeployProgress' + id]
+            console.log({t, d, id})
+            if (t) {
+              deployDialog.msgArr = [...deployDialog.msgArr, ...t.messageArr]
+              if (t.loaded) {
+                clearInterval(timer)
+                timer = null
+              }
+            }
+          })
+        }, 1000)
+
+      })
+}
 
 return {
   tabs,
   activeName,
   currentProjectId,
   projectList,
-  toDeploy(){
+  toDeploy() {
     deployDialog.show = true
   },
-  toSend(){
-    ajax({
-      url: '/api/deploy/runDeploy',
-      method: "post",
-      data: {
-        id: store.currentDeployId,
-        projectId: store.currentProjectId,
-        msg: deployDialog.msg
-      }
-    })
-        .then(({id})=> {
-          timer = setInterval(() => {
-            ajax({
-              url:'/api/deploy/getDeployProgress',
-              method: 'get',
-              data:{
-                id,
-                messageId: deployDialog.msgArr.length ? deployDialog.msgArr[deployDialog.msgArr.length - 1].id : undefined
-              }
-            }).then(d => {
-              let t = d.data['sendDeployProgress' + id]
-              console.log({t, d, id})
-              if(t){
-                deployDialog.msgArr = [ ...deployDialog.msgArr , ...t.messageArr]
-                if(t.loaded){
-                  clearInterval(timer)
-                  timer = null
-                }
-              }
-            })
-          } , 1000)
-
-        })
-  },
+  toSend,
   deployDialog,
   store
 }
