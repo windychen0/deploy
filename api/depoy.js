@@ -5,6 +5,7 @@ const {getProjectById, ProjectVersion, addProjectVersion} = require('./project')
 const child_process = require('child_process')
 const uuid = require('../utils/uuid')
 const {runPromiseInSequence, formatDate} = require('../utils/utils')
+const fs = require("fs");
 
 const renderShell = {
     async fn({stage, context}) {
@@ -42,7 +43,7 @@ const runStages = {
 }
 
 const runStage = {
-    async fn({stage, index, version, length , context}) {
+    async fn({stage, index, version, length, context}) {
         let version_stage = {
             name: stage.name,
             state: 'pending',
@@ -51,9 +52,23 @@ const runStage = {
         version.stages[index] = version_stage
         let task = taskShellLog[version.id]
 
+        let updateVersion = (obj = {}) => {
+            Object.keys(obj).forEach(k => version[k] = obj[k])
+        }
+
         let errorCallback = async e => {
             version_stage.state = 'error'
-            await addProjectVersion.fn({version, state: 'error', projectId: task.projectId})
+            updateVersion({
+                end: formatDate(),
+                start: version_stage.start,
+                deployer: context.user.name,
+                msg: context.msg
+            })
+            await addProjectVersion.fn({
+                version,
+                state: 'error',
+                projectId: task.projectId,
+            })
             throw e
         }
         let successCallback = async () => {
@@ -64,7 +79,18 @@ const runStage = {
             version_stage.end = formatDate()
             version_stage.state = 'ok'
             if (index === length - 1) {
-                await addProjectVersion.fn({version, state: 'ok', projectId: task.projectId})
+                updateVersion({
+                    start: version_stage.start,
+                    deployer: context.user.name,
+                    end: version_stage.end,
+                    msg: context.msg
+                })
+                await addProjectVersion.fn({
+                    version,
+                    state: 'ok',
+                    projectId: task.projectId,
+
+                })
                 task.loaded = true
             }
         }
@@ -74,13 +100,29 @@ const runStage = {
                 id: uuid(),
                 msg: `第${index + 1}步: ${stage.name} - 开始\n`
             })
-            let _p = new Promise(r => r())
-            switch (stage.api){
+
+            let _p = new Promise(r => r());
+            let timer = {
+                _fn: () => {
+                },
+                maxTime: stage.arg?.maxTime || (180 * 1000),
+                t: 0,
+                time: stage.arg?.time || (10 * 1000),
+                catch(e) {
+                    timer.t = timer.t + timer.time
+                    if (timer.t > timer.maxTime) {
+                        return e
+                    }
+                    return timer._fn()
+                }
+            }
+
+            switch (stage.api) {
                 case 'initGitLogToMsg':
                     let _arr = await getLastGitCommitInfo.fn({pwd: context.project.store_pwd, size: 10})
                     _arr.some(obj => {
-                        if(obj.commit === context.project.current_commit){
-                            context.updateProject({key: 'current_commit' , value: _arr[0].commit})
+                        if (obj.commit === context.project.current_commit) {
+                            context.updateProject({key: 'current_commit', value: _arr[0].commit})
                             return true
                         }
                         context.msg = (context.msg || '') + `\n提交信息: ${obj.info}\n作者: ${obj.commit_author}\n提交时间: ${obj.commit_date}\n`
@@ -88,9 +130,38 @@ const runStage = {
 
                     await successCallback()
                     break;
+                case 'awaitMavenPackage':
+                    if (!stage.arg?.file) {
+                        throw new Error()
+                    }
+                    timer._fn = () => new Promise((_r, _j) => setTimeout(() => fs.exists(stage.arg?.file, bool => bool ? _r() : _j()), timer.time)).catch(timer._fn);
+                    await timer._fn()
+                    break;
+                case 'curl':
+                    timer._fn = () => new Promise((_r, _j) => {
+                        setTimeout(() => {
+                            let {stdout} = child_process.spawn('curl ' + (context[stage.arg.url] || stage.arg.url), {shell: true})
+                            let message = '';
+                            stdout.on('data', m => {
+                                message += m.toString()
+                                if (m.toString().includes(stage.arg.string)) {
+                                    return _r()
+                                }
+                            })
+                            stdout.on('close', xx => {
+                                if (message.includes(stage.arg.string)) {
+                                    return _r()
+                                }
+                                _j()
+                            })
+                        }, timer.time)
+                    })
+                        .catch(timer._fn)
+                    await timer._fn()
+                    break;
                 default:
-                    let { shell } = await renderShell.fn({stage , context})
-                    let { stdout } = child_process.spawn(shell, {shell: true})
+                    let {shell} = await renderShell.fn({stage, context})
+                    let {stdout} = child_process.spawn(shell, {shell: true})
                     stdout.on('data', m => {
                         task.log.push({
                             id: uuid(),
@@ -150,7 +221,7 @@ const getLastGitCommitInfo = {
                                         key: 'commit',
                                         format: v => v.trim()
                                     }
-                                ].some(({reg, key , format}) => {
+                                ].some(({reg, key, format}) => {
                                     if (reg.test(it)) {
                                         data[key] = format ? format(it) : it.replace(reg, '').trim()
                                         return true
@@ -173,7 +244,7 @@ module.exports = {
         method: 'post',
         async fn({res, req}) {
 
-            let {id, projectId,  msg = ''} = req.body
+            let {id, projectId, msg = ''} = req.body
 
             let _uuid = ''
 
@@ -206,7 +277,7 @@ module.exports = {
 
                 context.next_version = Number(context.project.current_version) + 1
                 context.old_dir = context.project.deploy_dir + '/back/web_' + context.current_date
-                context.updateProject = ({key , value}) => {
+                context.updateProject = ({key, value}) => {
                     project[key] = value
                     projectStore.cacheData()
                 }

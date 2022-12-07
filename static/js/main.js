@@ -12,7 +12,7 @@ try{
     }
     vueStore = Vue.reactive(info)
 }catch (e) {
-    Vue.reactive({
+    vueStore = Vue.reactive({
         userInfo: {},
         projectList: [],
         currentProjectId: '',

@@ -16,9 +16,10 @@ const addProjectVersion = {
         let list = JSON.parse(JSON.stringify(await _store.get('versionList' , [])))
         let current_version = list[0]
         if(current_version){
-            current_version.duration = formatDate()
+            current_version.finish = formatDate()
         }
         list.unshift(version)
+
         _store.set('versionList' , list)
 
         let projectList = await store.get('project').get('list')
