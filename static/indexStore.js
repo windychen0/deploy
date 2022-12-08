@@ -264,15 +264,31 @@ Promise.all(resources.map(resource => {
         .then((html = '') => {
             return new Promise((resolve, reject) => {
                 let {tagItem} = getResourceTagItem(resource)
+                // 这里出现的诡异的 onreadystatechange 和 onload 事件不触发的问题
+                tagItem.id = `resource-${resource.id}`
+                let _timer
+                tagItem.onreadystatechange = function (){
+                    console.log(tagItem.readyState , 'readyState' , url)
+                    clearInterval(_timer)
+                    resolve()
+                }
 
                 tagItem.onload = () => {
+                    clearInterval(_timer)
                     resolve()
                 }
                 tagItem.onerror = () => {
+                    clearInterval(_timer)
                     reject()
                 }
                 tagItem.innerHTML = html
                 document.head.appendChild(tagItem)
+                _timer = setInterval(() => {
+                    if(document.getElementById(`resource-${resource.id}`)){
+                        clearInterval(_timer)
+                        resolve()
+                    }
+                } , 10 )
             })
         })
         .catch(e => {
